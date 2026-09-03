@@ -27,14 +27,24 @@ router.get('/:id', async (req, res) => {
 
         const usr = queryResult.records[0];
 
-        // Возвращаем JSON-структуру, идентичную врапперу UserInfoWrapper из Apex
+        // Очищаем ссылку: если она абсолютная, оставляем только относительный путь
+        let relativePhotoUrl = usr.MediumPhotoUrl;
+        if (relativePhotoUrl && relativePhotoUrl.startsWith('http')) {
+            try {
+                const urlObj = new URL(relativePhotoUrl);
+                relativePhotoUrl = urlObj.pathname + urlObj.search; // Оставит только /profilephoto/... или /services/...
+            } catch (e) {
+                console.error('Ошибка парсинга URL фото:', e);
+            }
+        }
+
         res.status(200).json({
             name: usr.Name || '-',
             email: usr.Email || '-',
             phone: usr.Phone || '-',
             title: usr.Title || '-',
             companyName: usr.CompanyName || '-',
-            photoUrl: usr.MediumPhotoUrl || null
+            photoUrl: relativePhotoUrl || null // Отправляем чистый относительный путь
         });
     } catch (error) {
         console.error('Ошибка GET /api/users/:id:', error);
