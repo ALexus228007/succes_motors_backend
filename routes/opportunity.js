@@ -2,18 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { getSalesforceConnection } = require('../services/salesforce');
 
-// 1. GET: Получить список сделок ТОЛЬКО для конкретного пользователя (фильтр по OwnerId)
+//Get all opportunities for a registered user
 router.get('/', async (req, res) => {
     try {
-        const userId = req.query.userId; // Ожидаем параметр ?userId=005...
-
+        const userId = req.query.userId; 
         if (!userId) {
-            return res.status(400).json({ error: 'Параметр userId обязателен' });
+            return res.status(400).json({ error: 'The userId parameter is required' });
         }
 
         const conn = await getSalesforceConnection();
         
-        // Запрашиваем записи, принадлежащие только текущему пользователю
         const queryResult = await conn.query(
             `SELECT Id, Name, Type, StageName, Amount, CloseDate, OrderNumber__c 
              FROM Opportunity 
@@ -54,16 +52,16 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 2. POST: Создать новую сделку и назначить ее владельцем текущего пользователя
+//Create Opportunity
 router.post('/', async (req, res) => {
     try {
-        const { name, amount, userId } = req.body; // Ожидаем userId в теле запроса
+        const { name, amount, userId } = req.body; 
 
         if (!name) {
-            return res.status(400).json({ error: 'Имя сделки (Name) обязательно' });
+            return res.status(400).json({ error: 'Deal name (Name) is required.' });
         }
         if (!userId) {
-            return res.status(400).json({ error: 'ID пользователя (userId) обязателен' });
+            return res.status(400).json({ error: 'User ID (userId) is required.' });
         }
 
         const conn = await getSalesforceConnection();
@@ -78,7 +76,7 @@ router.post('/', async (req, res) => {
         const newOpportunityData = {
             Name: name,
             Amount: amount ? parseFloat(amount) : null,
-            OwnerId: userId, // Явно связываем созданную запись с пользователем
+            OwnerId: userId, 
             Type: 'New Customer',
             LeadSource: 'Partner Referral',
             StageName: 'Prospecting',
@@ -93,7 +91,7 @@ router.post('/', async (req, res) => {
         if (insertResult.success) {
             res.status(201).json({ id: insertResult.id, success: true });
         } else {
-            res.status(400).json({ error: 'Не удалось создать сделку', details: insertResult.errors });
+            res.status(400).json({ error: 'Failed to create the deal.', details: insertResult.errors });
         }
     } catch (error) {
         console.error('Ошибка POST /api/opportunities:', error);
@@ -101,7 +99,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// 3. DELETE: Удаление сделки по ID
+//Delete selected opportunity
 router.delete('/:id', async (req, res) => {
     try {
         const opportunityId = req.params.id;
@@ -110,12 +108,12 @@ router.delete('/:id', async (req, res) => {
         const deleteResult = await conn.sobject('Opportunity').destroy(opportunityId);
 
         if (deleteResult.success) {
-            res.status(200).json({ success: true, message: 'Запись успешно удалена' });
+            res.status(200).json({ success: true, message: 'Record successfully deleted.' });
         } else {
-            res.status(400).json({ error: 'Не удалось удалить запись', details: deleteResult.errors });
+            res.status(400).json({ error: 'Failed to delete the record.', details: deleteResult.errors });
         }
     } catch (error) {
-        console.error('Ошибка DELETE /api/opportunities:', error);
+        console.error('Error DELETE /api/opportunities:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });

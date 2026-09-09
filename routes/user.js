@@ -2,18 +2,16 @@ const express = require('express');
 const router = express.Router();
 const { getSalesforceConnection } = require('../services/salesforce');
 
-// GET: Получить данные пользователя по его ID (вместо ScUserInfoController)
 router.get('/:id', async (req, res) => {
     try {
-        const userId = req.params.id; // Извлекаем ID из URL: /api/users/005...
+        const userId = req.params.id;
 
         if (!userId) {
-            return res.status(400).json({ error: 'ID пользователя обязателен' });
+            return res.status(400).json({ error: 'User ID is required.' });
         }
 
         const conn = await getSalesforceConnection();
 
-        // Запрашиваем информацию о пользователе из Salesforce
         const queryResult = await conn.query(
             `SELECT Name, Email, Phone, Title, CompanyName, MediumPhotoUrl 
              FROM User 
@@ -22,19 +20,18 @@ router.get('/:id', async (req, res) => {
         );
 
         if (queryResult.records.length === 0) {
-            return res.status(404).json({ error: 'Пользователь не найден' });
+            return res.status(404).json({ error: 'User not found.' });
         }
 
         const usr = queryResult.records[0];
 
-        // Очищаем ссылку: если она абсолютная, оставляем только относительный путь
         let relativePhotoUrl = usr.MediumPhotoUrl;
         if (relativePhotoUrl && relativePhotoUrl.startsWith('http')) {
             try {
                 const urlObj = new URL(relativePhotoUrl);
-                relativePhotoUrl = urlObj.pathname + urlObj.search; // Оставит только /profilephoto/... или /services/...
+                relativePhotoUrl = urlObj.pathname + urlObj.search;
             } catch (e) {
-                console.error('Ошибка парсинга URL фото:', e);
+                console.error('Error parsing photo URL:', e);
             }
         }
 
@@ -44,10 +41,10 @@ router.get('/:id', async (req, res) => {
             phone: usr.Phone || '-',
             title: usr.Title || '-',
             companyName: usr.CompanyName || '-',
-            photoUrl: relativePhotoUrl || null // Отправляем чистый относительный путь
+            photoUrl: relativePhotoUrl || null
         });
     } catch (error) {
-        console.error('Ошибка GET /api/users/:id:', error);
+        console.error('Error GET /api/users/:id:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
