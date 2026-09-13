@@ -13,7 +13,7 @@ router.get('/:id', async (req, res) => {
         const conn = await getSalesforceConnection();
 
         const queryResult = await conn.query(
-            `SELECT Name, Email, Phone, Title, CompanyName, MediumPhotoUrl 
+            `SELECT FirstName, LastName, Email, MobilePhone, Phone, Street, City, State, PostalCode, Country, MediumPhotoUrl 
              FROM User 
              WHERE Id = '${userId}' 
              LIMIT 1`
@@ -35,12 +35,15 @@ router.get('/:id', async (req, res) => {
             }
         }
 
+        const address = [usr.Street, usr.City, usr.State, usr.PostalCode, usr.Country].filter(Boolean).join(' ');
+       
         res.status(200).json({
-            name: usr.Name || '-',
+            firstName: usr.FirstName || '-',
+            lastName: usr.LastName || '-',
             email: usr.Email || '-',
+            mobilePhone: usr.MobilePhone || '-',
             phone: usr.Phone || '-',
-            title: usr.Title || '-',
-            companyName: usr.CompanyName || '-',
+            address: address || '-',
             photoUrl: relativePhotoUrl || null
         });
     } catch (error) {
