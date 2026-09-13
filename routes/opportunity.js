@@ -5,15 +5,15 @@ const { getSalesforceConnection } = require('../services/salesforce');
 //Get all opportunities for a registered user
 router.get('/', async (req, res) => {
     try {
-        const userId = req.query.userId; 
+        const userId = req.query.userId;
         if (!userId) {
             return res.status(400).json({ error: 'The userId parameter is required' });
         }
 
         const conn = await getSalesforceConnection();
-        
+
         const queryResult = await conn.query(
-            `SELECT Id, Name, Type, StageName, Amount, CloseDate, OrderNumber__c 
+            `SELECT Id, Name, Type, LeadSource, OrderNumber__c, CurrentGenerators__c, TrackingNumber__c, Amount, CloseDate, StageName, MainCompetitors__c, DeliveryInstallationStatus__c 
              FROM Opportunity 
              WHERE OwnerId = '${userId}' 
              ORDER BY CreatedDate DESC LIMIT 50`
@@ -37,12 +37,17 @@ router.get('/', async (req, res) => {
             return {
                 id: opp.Id,
                 displayName: displayName,
-                stage: opp.StageName,
+                type: opp.Type || null,
+                leadSource: opp.LeadSource || null,
+                orderNumber: opp.OrderNumber__c || null,
+                currentGenerators: opp.CurrentGenerators__c || null,
+                trackingNumber: opp.TrackingNumber__c || null,
                 amount: opp.Amount !== null ? opp.Amount : null,
                 closeDate: formattedDate,
-                type: opp.Type || null,
-                orderNumber: opp.OrderNumber__c || null
-            };
+                stage: opp.StageName,
+                mainCompetitors: opp.MainCompetitors__c || null,
+                deliveryInstallationStatus: opp.DeliveryInstallationStatus__c || null
+            }
         });
 
         res.status(200).json(mappedOpportunities);
@@ -55,7 +60,7 @@ router.get('/', async (req, res) => {
 //Create Opportunity
 router.post('/', async (req, res) => {
     try {
-        const { name, amount, userId } = req.body; 
+        const { name, amount, userId } = req.body;
 
         if (!name) {
             return res.status(400).json({ error: 'Deal name (Name) is required.' });
@@ -76,7 +81,7 @@ router.post('/', async (req, res) => {
         const newOpportunityData = {
             Name: name,
             Amount: amount ? parseFloat(amount) : null,
-            OwnerId: userId, 
+            OwnerId: userId,
             Type: 'New Customer',
             LeadSource: 'Partner Referral',
             StageName: 'Prospecting',
