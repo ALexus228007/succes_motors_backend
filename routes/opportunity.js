@@ -20,13 +20,7 @@ router.get('/', async (req, res) => {
         );
 
         const mappedOpportunities = queryResult.records.map(opp => {
-            let displayName = opp.Name;
-            if (opp.Type) {
-                displayName += ' - ' + opp.Type;
-            }
-            if (opp.OrderNumber__c) {
-                displayName += ' - ' + opp.OrderNumber__c;
-            }
+            const displayName = [opp.Name, opp.Type, opp.OrderNumber__c].filter(Boolean).join(' - ');
 
             let formattedDate = null;
             if (opp.CloseDate) {
@@ -36,23 +30,23 @@ router.get('/', async (req, res) => {
 
             return {
                 id: opp.Id,
-                displayName: displayName,
-                type: opp.Type || null,
-                leadSource: opp.LeadSource || null,
-                orderNumber: opp.OrderNumber__c || null,
-                currentGenerators: opp.CurrentGenerators__c || null,
-                trackingNumber: opp.TrackingNumber__c || null,
-                amount: opp.Amount !== null ? opp.Amount : null,
+                displayName,
+                type: opp.Type ?? null,
+                leadSource: opp.LeadSource ?? null,
+                orderNumber: opp.OrderNumber__c ?? null,
+                currentGenerators: opp.CurrentGenerators__c ?? null,
+                trackingNumber: opp.TrackingNumber__c ?? null,
+                amount: opp.Amount ?? null,
                 closeDate: formattedDate,
                 stage: opp.StageName,
-                mainCompetitors: opp.MainCompetitors__c || null,
-                deliveryInstallationStatus: opp.DeliveryInstallationStatus__c || null
+                mainCompetitors: opp.MainCompetitors__c ?? null,
+                deliveryInstallationStatus: opp.DeliveryInstallationStatus__c ?? null
             }
         });
 
         res.status(200).json(mappedOpportunities);
     } catch (error) {
-        console.error('Ошибка GET /api/opportunities:', error);
+        console.error('Error GET /api/opportunities:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
@@ -99,7 +93,7 @@ router.post('/', async (req, res) => {
             res.status(400).json({ error: 'Failed to create the deal.', details: insertResult.errors });
         }
     } catch (error) {
-        console.error('Ошибка POST /api/opportunities:', error);
+        console.error('Error POST /api/opportunities:', error);
         res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
